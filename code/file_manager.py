@@ -40,13 +40,59 @@ setting_imgui_limit = mod.setting(
     default=20,
     desc="Maximum number of files/folders to display in the imgui",
 )
-
+setting_imgui_string_limit = mod.setting(
+    "file_manager_string_limit",
+    type=int,
+    default=20,
+    desc="Maximum like of string to display in the imgui",
+)
 cached_path = None
 file_selections = folder_selections = []
 current_file_page = current_folder_page = 1
 
 ctx.lists["self.file_manager_directories"] = []
 ctx.lists["self.file_manager_files"] = []
+
+directories_to_remap = {}
+user_path = os.path.expanduser("~")
+if app.platform == "windows":
+    is_windows = True
+    import ctypes
+
+    GetUserNameEx = ctypes.windll.secur32.GetUserNameExW
+    NameDisplay = 3
+
+    size = ctypes.pointer(ctypes.c_ulong(0))
+    GetUserNameEx(NameDisplay, None, size)
+
+    nameBuffer = ctypes.create_unicode_buffer(size.contents.value)
+    GetUserNameEx(NameDisplay, nameBuffer, size)
+    one_drive_path = os.path.expanduser(os.path.join("~", "OneDrive"))
+
+    # this is probably not the correct way to check for onedrive, quick and dirty
+    if os.path.isdir(os.path.expanduser(os.path.join("~", r"OneDrive\Desktop"))):
+        default_folder = os.path.join("~", "Desktop")
+
+        directories_to_remap = {
+            "Desktop": os.path.join(one_drive_path, "Desktop"),
+            "Documents": os.path.join(one_drive_path, "Documents"),
+            "Downloads": os.path.join(user_path, "Downloads"),
+            "Music": os.path.join(user_path, "Music"),
+            "OneDrive": one_drive_path,
+            "Pictures": os.path.join(one_drive_path, "Pictures"),
+            "Videos": os.path.join(user_path, "Videos"),
+        }
+    else:
+        # todo use expanduser for cross platform support
+        directories_to_remap = {
+            "Desktop": os.path.join(user_path, "Desktop"),
+            "Documents": os.path.join(user_path, "Documents"),
+            "Downloads": os.path.join(user_path, "Downloads"),
+            "Music": os.path.join(user_path, "Music"),
+            "OneDrive": one_drive_path,
+            "Pictures": os.path.join(user_path, "Pictures"),
+            "Videos": os.path.join(user_path, "Videos"),
+        }
 
 
 @mod.action_class
@@ -103,9 +149,9 @@ class Actions:
             gui_files.hide()
             gui_folders.hide()
         else:
-            gui_files.freeze()
-            gui_folders.freeze()
-        
+            gui_files.show()
+            gui_folders.show()
+
     def file_manager_hide_pickers():
         """Hides the pickers"""
         if gui_files.showing:
@@ -114,6 +160,11 @@ class Actions:
 
     def file_manager_open_user_directory(path: str):
         """expands and opens the user directory"""
+        # this functionality exists mostly for windows.
+        # since OneDrive does strange stuff...
+        if path in directories_to_remap:
+            path = directories_to_remap[path]
+
         path = os.path.expanduser(os.path.join("~", path))
         actions.user.file_manager_open_directory(path)
 
@@ -137,7 +188,7 @@ class Actions:
                 current_file_page += 1
             else:
                 current_file_page = 1
-            gui_files.freeze()
+            gui_files.show()
 
     def file_manager_previous_file_page():
         """previous_file_page"""
@@ -148,7 +199,7 @@ class Actions:
             else:
                 current_file_page = total_file_pages
 
-            gui_files.freeze()
+            gui_files.show()
 
     def file_manager_next_folder_page():
         """next_folder_page"""
@@ -159,7 +210,7 @@ class Actions:
             else:
                 current_folder_page = 1
 
-            gui_folders.freeze()
+            gui_folders.show()
 
     def file_manager_previous_folder_page():
         """previous_folder_page"""
@@ -170,7 +221,7 @@ class Actions:
             else:
                 current_folder_page = total_folder_pages
 
-            gui_folders.freeze()
+            gui_folders.show()
 
 
 pattern = re.compile(r"[A-Z][a-z]*|[a-z]+|\d")
@@ -180,13 +231,27 @@ def create_spoken_forms(symbols, max_len=30):
     return [" ".join(list(islice(pattern.findall(s), max_len))) for s in symbols]
 
 
+def is_dir(f):
+    try:
+        return f.is_dir()
+    except:
+        return False
+
+
+def is_file(f):
+    try:
+        return f.is_file()
+    except:
+        return False
+
+
 def get_directory_map(current_path):
     directories = [
         f.name
         for f in islice(
             current_path.iterdir(), settings.get("user.file_manager_folder_limit", 1000)
         )
-        if f.is_dir()
+        if is_dir(f)
     ]
     # print(len(directories))
     spoken_forms = create_spoken_forms(directories)
@@ -199,14 +264,14 @@ def get_file_map(current_path):
         for f in islice(
             current_path.iterdir(), settings.get("user.file_manager_file_limit", 1000)
         )
-        if f.is_file()
+        if is_file(f)
     ]
     # print(str(files))
     spoken_forms = create_spoken_forms([p for p in files])
     return dict(zip(spoken_forms, [f for f in files]))
 
 
-@imgui.open(y=10, x=900, software=False)
+@imgui.open(y=10, x=900)
 def gui_folders(gui: imgui.GUI):
     global current_folder_page, total_folder_pages
     total_folder_pages = math.ceil(
@@ -221,7 +286,15 @@ def gui_folders(gui: imgui.GUI):
     current_index = (current_folder_page - 1) * setting_imgui_limit.get()
 
     while index <= setting_imgui_limit.get() and current_index < len(folder_selections):
-        gui.text("{}: {} ".format(index, folder_selections[current_index]))
+        name = (
+            (
+                folder_selections[current_index][: setting_imgui_string_limit.get()]
+                + ".."
+            )
+            if len(folder_selections[current_index]) > setting_imgui_string_limit.get()
+            else folder_selections[current_index]
+        )
+        gui.text("{}: {} ".format(index, name))
         current_index += 1
         index = index + 1
 
@@ -235,7 +308,7 @@ def gui_folders(gui: imgui.GUI):
     #   actions.user.file_manager_previous_folder_page()
 
 
-@imgui.open(y=10, x=1300, software=False)
+@imgui.open(y=10, x=1300)
 def gui_files(gui: imgui.GUI):
     global file_selections, current_file_page, total_file_pages
     total_file_pages = math.ceil(len(file_selections) / setting_imgui_limit.get())
@@ -246,7 +319,13 @@ def gui_files(gui: imgui.GUI):
     current_index = (current_file_page - 1) * setting_imgui_limit.get()
 
     while index <= setting_imgui_limit.get() and current_index < len(file_selections):
-        gui.text("{}: {} ".format(index, file_selections[current_index]))
+        name = (
+            (file_selections[current_index][: setting_imgui_string_limit.get()] + "..")
+            if len(file_selections[current_index]) > setting_imgui_string_limit.get()
+            else file_selections[current_index]
+        )
+
+        gui.text("{}: {} ".format(index, name))
         current_index = current_index + 1
         index = index + 1
 
@@ -259,19 +338,25 @@ def gui_files(gui: imgui.GUI):
     #   if gui.button("Previous..."):
     #        actions.user.file_manager_previous_file_page()
 
+
 def clear_lists():
     global folder_selections, file_selections
-    if (len(ctx.lists["self.file_manager_directories"]) > 0 or len(ctx.lists["self.file_manager_files"]) > 0):
+    if (
+        len(ctx.lists["self.file_manager_directories"]) > 0
+        or len(ctx.lists["self.file_manager_files"]) > 0
+    ):
         current_folder_page = current_file_page = 1
         ctx.lists["self.file_manager_directories"] = []
         ctx.lists["self.file_manager_files"] = []
         folder_selections = []
         file_selections = []
 
+
 def update_gui():
     if gui_folders.showing or setting_auto_show_pickers.get() >= 1:
-        gui_folders.freeze()
-        gui_files.freeze()
+        gui_folders.show()
+        gui_files.show()
+
 
 def update_lists():
     global folder_selections, file_selections, current_folder_page, current_file_page
@@ -289,10 +374,13 @@ def update_lists():
         is_valid_path = False
 
     if is_valid_path:
+        # print("valid..." + str(current_path))
         try:
             directories = get_directory_map(current_path)
             files = get_file_map(current_path)
         except:
+            # print("invalid path...")
+
             directories = {}
             files = {}
 
@@ -321,13 +409,19 @@ def win_event_handler(window):
     elif path:
         if cached_path != path:
             update_lists()
-    elif cached_path: 
+    elif cached_path:
         clear_lists()
         actions.user.file_manager_hide_pickers()
 
     cached_path = path
 
 
-ui.register("win_title", win_event_handler)
-ui.register("win_focus", win_event_handler)
+def register_events():
+    ui.register("win_title", win_event_handler)
+    ui.register("win_focus", win_event_handler)
+
+
+# prevent scary errors in the log by waiting for talon to be fully loaded
+# before registering the events
+app.register("ready", register_events)
 

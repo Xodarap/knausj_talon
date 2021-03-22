@@ -3,6 +3,13 @@ import os
 import subprocess
 
 mod = Module()
+mod.apps.mintty = """
+os: windows
+and app.name: Terminal
+os: windows
+and app.name: mintty.exe
+"""
+
 ctx = Context()
 ctx.matches = r"""
 app: mintty
@@ -17,13 +24,19 @@ setting_cyg_path = mod.setting(
     desc="Path to  cygpath.exe",
 )
 
+
 def get_win_path(cyg_path):
     path = ""
     try:
-        path = subprocess.check_output([setting_cyg_path.get(), "-w", cyg_path]).strip(b"\n").decode()
+        path = (
+            subprocess.check_output([setting_cyg_path.get(), "-w", cyg_path])
+            .strip(b"\n")
+            .decode()
+        )
     except:
         path = ""
     return path
+
 
 @ctx.action_class("user")
 class user_actions:
@@ -70,3 +83,33 @@ class user_actions:
     def file_manager_open_volume(volume: str):
         """file_manager_open_volume"""
         actions.user.file_manager_open_directory(volume)
+
+    def terminal_list_directories():
+        actions.insert("ls")
+        actions.key("enter")
+
+    def terminal_list_all_directories():
+        actions.insert("ls -a")
+        actions.key("enter")
+
+    def terminal_change_directory(path: str):
+        actions.insert("cd {}".format(path))
+        if path:
+            actions.key("enter")
+
+    def terminal_change_directory_root():
+        """Root of current drive"""
+        actions.insert("cd /")
+        actions.key("enter")
+
+    def terminal_clear_screen():
+        """Clear screen"""
+        actions.key("ctrl-l")
+
+    def terminal_run_last():
+        actions.key("up enter")
+
+    def terminal_kill_all():
+        actions.key("ctrl-c")
+        actions.insert("y")
+        actions.key("enter")

@@ -3,6 +3,7 @@ from talon import Context, Module, actions, imgui, settings, ui, app
 import os
 
 ctx = Context()
+mod = Module()
 ctx.matches = r"""
 app: windows_terminal
 """
@@ -16,14 +17,17 @@ directories_to_exclude = {}
 class user_actions:
     def file_manager_current_path():
         path = ui.active_window().title
-        path = path.replace("Administrator:  ", "")
+        path = (
+            path.replace("Administrator:  ", "")
+            .replace("Windows PowerShell: ", "")
+            .replace("Command Prompt: ", "")
+        )
 
         if path in directories_to_remap:
             path = directories_to_remap[path]
 
         if path in directories_to_exclude:
             path = ""
-
         return path
 
     # def file_manager_terminal_here():
@@ -62,4 +66,7 @@ class user_actions:
         """file_manager_open_volume"""
         actions.user.file_manager_open_directory(volume)
         actions.user.file_manager_refresh_title()
+
+    def tab_jump(number: int):
+        actions.key("ctrl-alt-{}".format(number))
 
