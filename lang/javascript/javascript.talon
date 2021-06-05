@@ -152,7 +152,6 @@ state reduce:
 
 state spread: "..."
 
-
 jaxwidth <user.react_sizes>:
   insert(" maxWidth='")
   insert(react_sizes)
@@ -234,7 +233,7 @@ jathen:
   key(left)
 ^jarid$:
   insert('test')
-^funky <user.text>$: user.code_private_function(text)
+^funky <user.text>$: user.code_default_function(text)
 ^pro funky <user.text>$: user.code_protected_function(text)
 ^pub funky <user.text>$: user.code_public_function(text)
 ^comp funky <user.text>$: user.code_insert_component(text)
