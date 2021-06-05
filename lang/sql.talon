@@ -1,4 +1,4 @@
-app: datagrip
+app: chrome
 
 -
 select: "SELECT "
@@ -18,3 +18,4 @@ inner join:
     key(left)
     key(left)
     key(left)
+latest: "order by created_at desc"

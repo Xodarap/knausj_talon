@@ -8,8 +8,8 @@ tag(): user.code_generic
 
 settings():
     user.code_private_function_formatter = "PRIVATE_CAMEL_CASE"
-    user.code_protected_function_formatter = "PRIVATE_CAMEL_CASE"
-    user.code_public_function_formatter = "PRIVATE_CAMEL_CASE"
+    user.code_protected_function_formatter = "PUBLIC_CAMEL_CASE"
+    user.code_public_function_formatter = "PUBLIC_CAMEL_CASE"
     user.code_private_variable_formatter = "PRIVATE_CAMEL_CASE"
     user.code_protected_variable_formatter = "PRIVATE_CAMEL_CASE"
     user.code_public_variable_formatter = "PRIVATE_CAMEL_CASE"
@@ -152,6 +152,91 @@ state reduce:
 
 state spread: "..."
 
+
+jaxwidth <user.react_sizes>:
+  insert(" maxWidth='")
+  insert(react_sizes)
+  insert("' ")
+jonsole <user.text>:
+  insert("console.log('")
+  insert(user.formatted_text(text, "PRIVATE_CAMEL_CASE"))
+  insert( "', ")
+  insert(user.formatted_text(text, "PRIVATE_CAMEL_CASE"))
+  insert( ")")
+
+jid <user.text>:
+  insert(user.formatted_text(text, "PRIVATE_CAMEL_CASE"))
+  insert("={")
+  insert(user.formatted_text(text, "PRIVATE_CAMEL_CASE"))
+  insert("}")
+
+jyle:
+  insert("style={{{{}}}}")
+  key(left)
+  key(left)
+jattribute <user.text>:
+  insert(" ")
+  insert(user.formatted_text(text, "PRIVATE_CAMEL_CASE"))
+  insert("=''")
+  key(left)
+
+jelap:
+  key(end)
+  insert("{")
+  key(enter)
+<number> pixels:
+  insert(number)
+  insert("px")
+^jelement <user.text>$: user.code_element(text)
+^jelfement <user.text>$: user.code_element_self_closing(text)
+^helement <user.elements>$: user.code_helement(elements)
+^helfement <user.text>$: user.code_helement_self_closing(text)
+^close jelement <user.text>$: user.code_element_close(text)
+^import component <user.text>$: user.code_import_component(text)
+^jair <user.text>$: 
+    insert("const ")
+    insert(user.formatted_text(text, "PRIVATE_CAMEL_CASE"))
+    insert(" = ")
+jambda <user.alphabet>:
+  insert(alphabet)
+  insert(" => ")
+  insert(alphabet)
+  insert(".")
+jend <user.text>:
+  key(end)
+  insert(text)
+  key(enter)
+jigrate latest:
+  insert("yarn knex migrate:latest")
+  key(enter)
+jigrate test:
+  insert("yarn migrate:test")
+  key(enter)
+jigrate production:
+  insert("yarn migrate:production")
+  key(enter)
+jigrate rollback:
+  insert("yarn knex migrate:rollback")
+  key(enter)
+jigrate test rollback:
+  insert("yarn migrate:test:rollback")
+  key(enter)
+jigrate make <user.text>:
+  insert("yarn knex migrate:make ")
+  insert(user.formatted_text(text, "SNAKE_CASE"))
+  key(enter)
+
+jupe up: key(alt-shift-up)
+jupe down: key(alt-shift-down)
+jaleep: insert('await new Promise(resolve => setTimeout(resolve, 5000));')
+jathen:
+  insert('.then(r => )')
+  key(left)
+^jarid$:
+  insert('test')
 ^funky <user.text>$: user.code_private_function(text)
 ^pro funky <user.text>$: user.code_protected_function(text)
 ^pub funky <user.text>$: user.code_public_function(text)
+^comp funky <user.text>$: user.code_insert_component(text)
+^a sync funky <user.text>$:
+  insert("async ")

@@ -399,7 +399,8 @@ class Actions:
 
     def code_from_import():
         """from import python equivalent"""
-
+    def code_import_component(text: str):
+        """from import python equivalent"""
     def code_toggle_functions():
         """GUI: List functions for active language"""
         global function_list
@@ -446,6 +447,17 @@ class Actions:
 
     def code_document_string():
         """Inserts a document string and positions the cursor appropriately"""
+
+    def code_element(text: str):
+        """code_element"""
+    def code_element_close(text: str):
+        """code_element"""
+    def code_element_self_closing(text: str):
+        """code_element"""
+    def code_helement(text: str):
+        """code_element"""
+    def code_helement_self_closing(text: str):
+        """code_element"""
 
 
 def update_library_list_and_freeze():
