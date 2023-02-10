@@ -239,3 +239,23 @@ jathen:
 ^comp funky <user.text>$: user.code_insert_component(text)
 ^a sync funky <user.text>$:
   insert("async ")
+git drop: 
+  key(home)
+  key(del)
+  key(del)
+  key(del)
+  key(del)
+  insert('d')
+jit fetch: "git fetch\n"
+jit pull: "git pull\n"
+jit status: "git status\n"
+jit push: "git push\n"
+jit stash: "git stash\n"
+jit check out: "git checkout "
+jart: "yarn ea-start\n"
+Gessel: "wsl\n"
+go to <user.text>: 
+  key(ctrl-p)
+  insert(user.formatted_text(text, "PUBLIC_CAMEL_CASE"))
+  # sleep(200ms)
+  # key(enter)
